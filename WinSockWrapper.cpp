@@ -56,7 +56,7 @@ int WinSockWrapper::connectToHost(char* remoteHost)
 {
 	if(master)
 	{
-
+		this->error = "Already have an active connection.";
 		return 1;
 	}
 	// Resolve the server address and port
