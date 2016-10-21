@@ -54,6 +54,11 @@ int WinSockWrapper::waitForConnection()
 
 int WinSockWrapper::connectToHost(char* remoteHost)
 {
+	if(master)
+	{
+
+		return 1;
+	}
 	// Resolve the server address and port
 	ciResult = getaddrinfo(remoteHost, DEFAULT_PORT, &chints, &cresult);
 	if (ciResult != 0) {
@@ -199,6 +204,11 @@ int WinSockWrapper::recieveData()
 		} while (siResult > 0);
 	}
 	return 0;
+}
+
+std::string WinSockWrapper::get_error()
+{
+	return this->error;
 }
 
 int WinSockWrapper::initializeServer()

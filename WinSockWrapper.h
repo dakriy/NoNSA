@@ -7,6 +7,7 @@
 #include <ws2tcpip.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string>
 
 // Need to link with Ws2_32.lib, Mswsock.lib, and Advapi32.lib
 #pragma comment (lib, "Ws2_32.lib")
@@ -27,6 +28,7 @@ public:
 	int sendData(char * sendbuf);
 	int closeConnection();
 	int recieveData();
+	std::string get_error();
 protected:
 	int initializeServer();
 	int initizlizeClient();
@@ -41,4 +43,5 @@ protected:
 		*cptr = NULL,
 		chints;
 	int ciResult;
+	std::string error;
 };
