@@ -12,7 +12,7 @@ int WinSockWrapper::waitForConnection()
 	// Create a SOCKET for connecting to server
 	ListenSocket = socket(sresult->ai_family, sresult->ai_socktype, sresult->ai_protocol);
 	if (ListenSocket == INVALID_SOCKET) {
-		printf("socket failed with error: %ld\n", WSAGetLastError());
+		this->error = WSAGetLastError();
 		freeaddrinfo(sresult);
 		WSACleanup();
 		return 1;
@@ -21,7 +21,7 @@ int WinSockWrapper::waitForConnection()
 	// Setup the TCP listening socket
 	siResult = bind(ListenSocket, sresult->ai_addr, (int)sresult->ai_addrlen);
 	if (siResult == SOCKET_ERROR) {
-		printf("bind failed with error: %d\n", WSAGetLastError());
+		this->error = WSAGetLastError();
 		freeaddrinfo(sresult);
 		closesocket(ListenSocket);
 		WSACleanup();
@@ -32,7 +32,7 @@ int WinSockWrapper::waitForConnection()
 
 	siResult = listen(ListenSocket, 1);
 	if (siResult == SOCKET_ERROR) {
-		printf("listen failed with error: %d\n", WSAGetLastError());
+		this->error = WSAGetLastError();
 		closesocket(ListenSocket);
 		WSACleanup();
 		return 1;
@@ -41,7 +41,7 @@ int WinSockWrapper::waitForConnection()
 	// Accept a client socket
 	ClientSocket = accept(ListenSocket, NULL, NULL);
 	if (ClientSocket == INVALID_SOCKET) {
-		printf("accept failed with error: %d\n", WSAGetLastError());
+		this->error = WSAGetLastError();
 		closesocket(ListenSocket);
 		WSACleanup();
 		return 1;
@@ -64,7 +64,7 @@ int WinSockWrapper::connectToHost(char* remoteHost)
 	// Resolve the server address and port
 	ciResult = getaddrinfo(remoteHost, DEFAULT_PORT, &chints, &cresult);
 	if (ciResult != 0) {
-		printf("getaddrinfo failed with error: %d\n", ciResult);
+		this->error = WSAGetLastError();
 		WSACleanup();
 		return 1;
 	}
@@ -76,7 +76,7 @@ int WinSockWrapper::connectToHost(char* remoteHost)
 		ConnectSocket = socket(cptr->ai_family, cptr->ai_socktype,
 			cptr->ai_protocol);
 		if (ConnectSocket == INVALID_SOCKET) {
-			printf("socket failed with error: %ld\n", WSAGetLastError());
+			this->error = WSAGetLastError();
 			WSACleanup();
 			return 1;
 		}
@@ -94,7 +94,7 @@ int WinSockWrapper::connectToHost(char* remoteHost)
 	freeaddrinfo(cresult);
 
 	if (ConnectSocket == INVALID_SOCKET) {
-		printf("Unable to connect to server!\n");
+		this->error = "Unable to connect to server!\n";
 		WSACleanup();
 		return 1;
 	}
@@ -126,7 +126,7 @@ int WinSockWrapper::cleanup()
 	// shutdown the client socket
 	ciResult = shutdown(ConnectSocket, SD_BOTH);
 	if (ciResult == SOCKET_ERROR) {
-		printf("shutdown failed with error: %d\n", WSAGetLastError());
+		this->error = WSAGetLastError();
 		closesocket(ConnectSocket);
 		WSACleanup();
 		return 1;
@@ -138,7 +138,7 @@ int WinSockWrapper::cleanup()
 	// shutdown the server connection socket
 	siResult = shutdown(ClientSocket, SD_BOTH);
 	if (siResult == SOCKET_ERROR) {
-		printf("shutdown failed with error: %d\n", WSAGetLastError());
+		this->error = WSAGetLastError();
 		closesocket(ClientSocket);
 		WSACleanup();
 		return 1;
@@ -160,7 +160,7 @@ int WinSockWrapper::sendall(char* buf, int* len)
 		while (total < *len) {
 			n = send(ConnectSocket, buf + total, bytesleft, 0);
 			if (n == SOCKET_ERROR) {
-				printf("send failed with error: %d\n", WSAGetLastError());
+				this->error = WSAGetLastError();
 				closesocket(ConnectSocket);
 				WSACleanup();
 				return -1;
@@ -177,7 +177,7 @@ int WinSockWrapper::sendall(char* buf, int* len)
 		while (total < *len) {
 			n = send(ClientSocket, buf + total, bytesleft, 0);
 			if (n == SOCKET_ERROR) {
-				printf("send failed with error: %d\n", WSAGetLastError());
+				this->error = WSAGetLastError();
 				closesocket(ConnectSocket);
 				WSACleanup();
 				return -1;
@@ -207,9 +207,9 @@ void WinSockWrapper::recieveData()
 			if (ciResult > 0)
 				printf("Bytes received: %d\n", ciResult);
 			else if (ciResult == 0)
-				this->cleanup();
+				this->closeConnection();
 			else
-				printf("recv failed with error: %d\n", WSAGetLastError());
+				this->error = WSAGetLastError();
 
 		} while (ciResult > 0);
 	} else
@@ -224,7 +224,7 @@ void WinSockWrapper::recieveData()
 			else if (siResult == 0)
 				this->cleanup();
 			else {
-				printf("recv failed with error: %d\n", WSAGetLastError());
+				this->error = WSAGetLastError();
 				closesocket(ClientSocket);
 				WSACleanup();
 			}
@@ -253,7 +253,7 @@ int WinSockWrapper::initializeServer()
 	// Initialize Winsock
 	siResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
 	if (siResult != 0) {
-		printf("WSAStartup failed with error: %d\n", siResult);
+		this->error = WSAGetLastError();
 		return 1;
 	}
 
@@ -266,7 +266,7 @@ int WinSockWrapper::initializeServer()
 	// Resolve the server address and port
 	siResult = getaddrinfo(NULL, DEFAULT_PORT, &hints, &sresult);
 	if (siResult != 0) {
-		printf("getaddrinfo failed with error: %d\n", siResult);
+		this->error = WSAGetLastError();
 		WSACleanup();
 		return 1;
 	}
@@ -281,7 +281,7 @@ int WinSockWrapper::initizlizeClient()
 	// Initialize Winsock
 	ciResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
 	if (ciResult != 0) {
-		printf("WSAStartup failed with error: %d\n", ciResult);
+		this->error = WSAGetLastError();
 		return 1;
 	}
 
