@@ -1,22 +1,26 @@
 #include "QueueHandler.h"
 #include <thread>
 
-void QueueHandler::lock_mutex()
+template <class T>
+void QueueHandler<T>::lock_mutex()
 {
 	this->mutex = true;
 }
 
-void QueueHandler::unlock_mutex()
+template <class T>
+void QueueHandler<T>::unlock_mutex()
 {
 	this->mutex = false;
 }
 
-bool QueueHandler::mutex_locked()
+template <class T>
+bool QueueHandler<T>::mutex_locked()
 {
 	return this->mutex;
 }
 
-void QueueHandler::check_mutex()
+template <class T>
+void QueueHandler<T>::check_mutex()
 {
 	while (this->mutex_locked())
 	{
@@ -24,7 +28,8 @@ void QueueHandler::check_mutex()
 	}
 }
 
-void QueueHandler::push_to_queue(void * data)
+template <class T>
+void QueueHandler<T>::push_to_queue(T * data)
 {
 	this->check_mutex();
 	this->lock_mutex();
@@ -33,7 +38,8 @@ void QueueHandler::push_to_queue(void * data)
 
 }
 
-void * QueueHandler::pop_from_queue()
+template <class T>
+T * QueueHandler<T>::pop_from_queue()
 {
 	void * temp = nullptr;
 	this->check_mutex();
