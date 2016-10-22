@@ -8,6 +8,7 @@ WinSockWrapper::WinSockWrapper()
 
 int WinSockWrapper::waitForConnection()
 {
+	this->closed = false;
 	// Create a SOCKET for connecting to server
 	ListenSocket = socket(sresult->ai_family, sresult->ai_socktype, sresult->ai_protocol);
 	if (ListenSocket == INVALID_SOCKET) {
@@ -29,7 +30,7 @@ int WinSockWrapper::waitForConnection()
 
 	freeaddrinfo(sresult);
 
-	siResult = listen(ListenSocket, SOMAXCONN);
+	siResult = listen(ListenSocket, 1);
 	if (siResult == SOCKET_ERROR) {
 		printf("listen failed with error: %d\n", WSAGetLastError());
 		closesocket(ListenSocket);
@@ -48,12 +49,13 @@ int WinSockWrapper::waitForConnection()
 
 	// No longer need server socket
 	closesocket(ListenSocket);
-	
+	this->master = true;
 	return 0;
 }
 
 int WinSockWrapper::connectToHost(char* remoteHost)
 {
+	this->closed = false;
 	if(master)
 	{
 		this->error = "Already have an active connection.";
@@ -99,47 +101,30 @@ int WinSockWrapper::connectToHost(char* remoteHost)
 	return 0;
 }
 
-int WinSockWrapper::sendData(char * sendbuf)
+int WinSockWrapper::sendData(char * data, int size_of_data)
 {
-	if (!master)
-	{
-		ciResult = send(ConnectSocket, sendbuf, (int)strlen(sendbuf), 0);
-		if (ciResult == SOCKET_ERROR) {
-			printf("send failed with error: %d\n", WSAGetLastError());
-			closesocket(ConnectSocket);
-			WSACleanup();
-			return 1;
-		}
-		return 0;
-	}
-	else
-	{
-		int iSendResult;
-		iSendResult = send(ClientSocket, sendbuf, siResult, 0);
-		if (iSendResult == SOCKET_ERROR) {
-			printf("send failed with error: %d\n", WSAGetLastError());
-			closesocket(ClientSocket);
-			WSACleanup();
-			return 1;
-		}
-		return 0;
-	}
-	
+	if (this->sendall(data, &size_of_data) == -1)
+		return -1;
+	return 0;
 }
 
 int WinSockWrapper::closeConnection()
 {
-	char close_connection_command = 0;
-	this->sendData(&close_connection_command);
-	this->cleanup();
+	if (!this->closed)
+	{
+		this->cleanup();
+		this->closed = true;
+	}
 	return 0;
 }
 
 
 int WinSockWrapper::cleanup()
 {
+	if (closed)
+		return 0;
 	// shutdown the client socket
-	ciResult = shutdown(ConnectSocket, SD_SEND);
+	ciResult = shutdown(ConnectSocket, SD_BOTH);
 	if (ciResult == SOCKET_ERROR) {
 		printf("shutdown failed with error: %d\n", WSAGetLastError());
 		closesocket(ConnectSocket);
@@ -148,11 +133,10 @@ int WinSockWrapper::cleanup()
 	}
 	// cleanup
 	closesocket(ConnectSocket);
-	WSACleanup();
 
 
 	// shutdown the server connection socket
-	siResult = shutdown(ClientSocket, SD_SEND);
+	siResult = shutdown(ClientSocket, SD_BOTH);
 	if (siResult == SOCKET_ERROR) {
 		printf("shutdown failed with error: %d\n", WSAGetLastError());
 		closesocket(ClientSocket);
@@ -161,11 +145,56 @@ int WinSockWrapper::cleanup()
 	}
 	// cleanup
 	closesocket(ClientSocket);
-	WSACleanup();
+
 	return 0;
 }
 
-int WinSockWrapper::recieveData()
+int WinSockWrapper::sendall(char* buf, int* len)
+{
+	int total = 0;
+	int bytesleft = *len;
+	int n;
+
+	if (!master)
+	{
+		while (total < *len) {
+			n = send(ConnectSocket, buf + total, bytesleft, 0);
+			if (n == SOCKET_ERROR) {
+				printf("send failed with error: %d\n", WSAGetLastError());
+				closesocket(ConnectSocket);
+				WSACleanup();
+				return -1;
+			}
+			if (n == -1) { break; }
+			total += n;
+			bytesleft -= n;
+		}
+
+		*len = total; // return number actually sent here
+		return n == -1 ? -1 : 0; // return -1 on failure, 0 on success
+	}
+	else {
+		while (total < *len) {
+			n = send(ClientSocket, buf + total, bytesleft, 0);
+			if (n == SOCKET_ERROR) {
+				printf("send failed with error: %d\n", WSAGetLastError());
+				closesocket(ConnectSocket);
+				WSACleanup();
+				return -1;
+			}
+			if (n == -1) { break; }
+			total += n;
+			bytesleft -= n;
+		}
+
+		*len = total; // return number actually sent here
+
+		return n == -1 ? -1 : 0; // return -1 on failure, 0 on success
+	}
+
+}
+
+void WinSockWrapper::recieveData()
 {
 	char recvbuf[DEFAULT_BUFLEN];
 
@@ -198,17 +227,20 @@ int WinSockWrapper::recieveData()
 				printf("recv failed with error: %d\n", WSAGetLastError());
 				closesocket(ClientSocket);
 				WSACleanup();
-				return 1;
 			}
 
 		} while (siResult > 0);
 	}
-	return 0;
 }
 
 std::string WinSockWrapper::get_error()
 {
 	return this->error;
+}
+
+void WinSockWrapper::stop()
+{
+	WSACleanup();
 }
 
 int WinSockWrapper::initializeServer()
@@ -259,4 +291,10 @@ int WinSockWrapper::initizlizeClient()
 	chints.ai_protocol = IPPROTO_TCP;
 
 	return 0;
+}
+
+WinSockWrapper::~WinSockWrapper()
+{
+	this->closeConnection();
+	this->stop();
 }
