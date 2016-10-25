@@ -1,4 +1,5 @@
 #include "WinSockWrapper.h"
+#include <boost/thread.hpp>
 
 WinSockWrapper::WinSockWrapper()
 {
@@ -9,6 +10,7 @@ WinSockWrapper::WinSockWrapper()
 int WinSockWrapper::waitForConnection()
 {
 	this->closed = false;
+
 	// Create a SOCKET for connecting to server
 	ListenSocket = socket(sresult->ai_family, sresult->ai_socktype, sresult->ai_protocol);
 	if (ListenSocket == INVALID_SOCKET) {
@@ -108,18 +110,19 @@ int WinSockWrapper::sendData(char * data, int size_of_data)
 	return 0;
 }
 
-int WinSockWrapper::closeConnection()
+int WinSockWrapper::disconnect()
 {
 	if (!this->closed)
 	{
-		this->cleanup();
-		this->closed = true;
+		this->closeConnection();
 	}
+	this->master = false;
+	this->closed = true;
 	return 0;
 }
 
 
-int WinSockWrapper::cleanup()
+int WinSockWrapper::closeConnection()
 {
 	if (closed)
 		return 0;
@@ -207,7 +210,7 @@ void WinSockWrapper::recieveData()
 			if (ciResult > 0)
 				printf("Bytes received: %d\n", ciResult);
 			else if (ciResult == 0)
-				this->closeConnection();
+				this->disconnect();
 			else
 				this->error = WSAGetLastError();
 
@@ -222,7 +225,7 @@ void WinSockWrapper::recieveData()
 				printf("Bytes received: %d\n", siResult);
 			}
 			else if (siResult == 0)
-				this->cleanup();
+				this->closeConnection();
 			else {
 				this->error = WSAGetLastError();
 				closesocket(ClientSocket);
@@ -236,6 +239,16 @@ void WinSockWrapper::recieveData()
 std::string WinSockWrapper::get_error()
 {
 	return this->error;
+}
+
+bool WinSockWrapper::get_connection_relationship()
+{
+	return this->master;
+}
+
+bool WinSockWrapper::get_connection_state()
+{
+	return !this->closed;
 }
 
 void WinSockWrapper::stop()
@@ -295,6 +308,6 @@ int WinSockWrapper::initizlizeClient()
 
 WinSockWrapper::~WinSockWrapper()
 {
-	this->closeConnection();
+	this->disconnect();
 	this->stop();
 }

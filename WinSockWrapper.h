@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <string>
 #include <queue>
-
+#include "QueueHandler.h"
 // Need to link with Ws2_32.lib, Mswsock.lib, and Advapi32.lib
 #pragma comment (lib, "Ws2_32.lib")
 #pragma comment (lib, "Mswsock.lib")
@@ -24,15 +24,19 @@ public:
 	int waitForConnection();
 	int connectToHost(char * remoteHost);
 	int sendData(char * data, int size_of_data);
-	int closeConnection();
 	void recieveData();
 	std::string get_error();
+	// Returns true if master or false if slave or if there is no connection.
+	bool get_connection_relationship();
+	// Returns false if there is no connection
+	bool get_connection_state();
+	int disconnect();
 	void stop();
 	~WinSockWrapper();
 protected:
 	int initializeServer();
 	int initizlizeClient();
-	int cleanup();
+	int closeConnection();
 	int sendall(char *buf, int *len);
 	SOCKET ListenSocket = INVALID_SOCKET;
 	SOCKET ClientSocket = INVALID_SOCKET;
