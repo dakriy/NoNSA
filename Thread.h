@@ -1,9 +1,15 @@
 #pragma once
 
-#include <functional>
+#include "QueueHandler.h"
+#include <boost/thread.hpp>
 
+template <class T>
 class Thread
 {
 public:
-	void CreateThread(std::function<void()> func, void * args);
+	Thread();
+	QueueHandler<T> communicationQueue;
+	~Thread();
 };
+
+

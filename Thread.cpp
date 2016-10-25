@@ -1,7 +1,11 @@
 #include "Thread.h"
-#include <thread>
-
-void Thread::CreateThread(std::function<void()> func, void * args)
+template <class T>
+Thread<T>::Thread()
 {
-	std::thread exec(func, args);
+	
+}
+
+template <class T>
+Thread<T>::~Thread()
+{
 }

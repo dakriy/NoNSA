@@ -10,8 +10,8 @@ protected:
 	void lock_mutex();
 	void unlock_mutex();
 	bool mutex_locked();
-	void check_mutex();
+	int check_mutex();
 public:
-	void push_to_queue(T * packet);
+	int push_to_queue(T * packet);
 	T * pop_from_queue();
 };
