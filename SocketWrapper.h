@@ -4,7 +4,12 @@
 #include <boost/thread.hpp>
 #include <boost/lockfree/queue.hpp>
 #include <boost/atomic.hpp>
-#include "Globals.h"
+#include "Message.h"
+
+enum Relationship
+{
+	master, slave, disconnected
+};
 
 using boost::asio::ip::tcp;
 
@@ -23,14 +28,14 @@ protected:
 	void start_threads();
 	void stop_threads();
 	//boost::lockfree::queue<data_packet *, boost::lockfree::capacity<100>> listen_queue;
-	boost::lockfree::queue<data_packet *, boost::lockfree::capacity<100>> send_queue;
+	boost::lockfree::queue<Message, boost::lockfree::capacity<100>> send_queue;
 public:
 	SocketWrapper();
 	Relationship get_status();
 	int connect(std::string server_addr, std::string port);
 	int wait_for_connection(int port);
 	void send(std::string data);
-	void send(data_packet * data);
+	void send(Message data);
 	void send(char * data, size_t len);
 	std::string getError();
 	int disconnect();

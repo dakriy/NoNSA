@@ -19,38 +19,48 @@ int main()
 	}
 	if (what_to_do == "C")
 	{
-		std::string port = "6666";
-		std::string host = "127.0.0.1";
+		std::string port;
+		std::string host;
 		std::cout << "host" << std::endl;
-		//std::cin >> host;
+		std::cin >> host;
 		std::cout << "port" << std::endl;
-		//std::cin >> port;
+		std::cin >> port;
 		sock.connect(host, port);
 	} else if (what_to_do == "R")
 	{
-		int port = 6666;
+		int port;
 		std::cout << "port" << std::endl;
-		//std::cin >> port;
+		std::cin >> port;
 		sock.wait_for_connection(port);
 	}
 
 	std::string input;
 
-	while (input != "exit()")
+	for (;;)
 	{
 		std::cout << sock.getError() << std::endl;
 		std::getline(std::cin, input);
+		
 		sock.send(input);
 		if (sock.get_status() == disconnected)
 		{
 			std::cout << "Disconnected" << std::endl;
 			input = "exit()";
 		}
+		if (input == "exit()")
+		{
+			sock.disconnect();
+			break;
+		}
 	}
+
 	if(sock.get_status() != disconnected)
 	{
 		sock.disconnect();
 	}
+	std::cout << "Press any key to exit" << std::endl;
+	std::getline(std::cin, input);
+
 	//printf("Currently there is zero functionality. Sorry about that...\n");
 
 	//Keybase keybase;

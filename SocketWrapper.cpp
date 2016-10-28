@@ -13,10 +13,17 @@ void SocketWrapper::listen_thread_func()
 		{
 			if (this->_status != disconnected)
 			{
-				char * buf = new char[CHAR_MAX];
+				char buf[CHAR_MAX];
 				boost::system::error_code error;
-				size_t len = (*sock).read_some(boost::asio::mutable_buffers_1(buf, CHAR_MAX), error);
-				printf("Remote Host: %.*s\n", len, buf);
+				size_t len = 0;
+				read(*sock, boost::asio::buffer(buf, Message::header_length));
+				char c_len[5] = { '\0' };
+				strncpy_s(c_len, buf, Message::header_length);
+				size_t body_len = atoi(c_len);
+
+				char data[1024];
+
+				read(*sock, boost::asio::buffer(data, body_len));
 				if (error == boost::asio::error::eof)
 				{
 					this->disconnect();
@@ -25,7 +32,18 @@ void SocketWrapper::listen_thread_func()
 				else if (error)
 					throw boost::system::system_error(error);
 				
-				this->io_service->run();
+				if(body_len == 6)
+				{
+					char buff[7];
+					char compare[7] = { 'e','x','i','t','(',')','\0' };
+					strncpy_s(buff, data, 6);
+					if (strcmp(buff, compare) == 0)
+					{
+						return;
+					}
+				}
+
+				printf("Remote Host: %.*s\n", body_len, data);
 			}
 			else
 				return;
@@ -49,11 +67,12 @@ void SocketWrapper::send_thread_func()
 			{
 				if (!this->send_queue.empty())
 				{
-					data_packet * data_to_send;
+					Message data_to_send;
 					this->send_queue.pop(data_to_send);
 					boost::system::error_code ignored_error;
-					boost::asio::write(*sock, boost::asio::buffer((*data_to_send).get_string_val()), boost::asio::transfer_all(), ignored_error);
-					delete data_to_send;
+					char temp[1028];
+					memcpy(temp, data_to_send.get_data(), data_to_send.length());
+					boost::asio::write(*sock, boost::asio::buffer(temp, data_to_send.length()), boost::asio::transfer_all(), ignored_error);
 					this->io_service->run();
 				}
 			}
@@ -143,18 +162,22 @@ int SocketWrapper::wait_for_connection(int port = 6666)
 
 void SocketWrapper::send(std::string data)
 {
-	data_packet *temp = new data_packet(data);
-	this->send_queue.push(temp);
+	if (data.empty())
+		return;
+	Message tmp;
+	tmp.set_body(data);
+	this->send_queue.push(tmp);
 }
 
-void SocketWrapper::send(data_packet * data)
+void SocketWrapper::send(Message data)
 {
 	this->send_queue.push(data);
 }
 
 void SocketWrapper::send(char* data, size_t len)
 {
-	data_packet *temp = new data_packet(data, len);
+	Message temp;
+	temp.set_body(data, len);
 	this->send_queue.push(temp);
 }
 
@@ -171,6 +194,7 @@ void SocketWrapper::start_threads()
 
 void SocketWrapper::stop_threads()
 {
+	this->send("exit()");
 	this->_status = disconnected;
 	this->listen_thread->join();
 	this->send_thread->join();
