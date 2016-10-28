@@ -48,8 +48,10 @@ int main()
 			input = "exit()";
 		}
 	}
-	
-	
+	if(sock.get_status() != disconnected)
+	{
+		sock.disconnect();
+	}
 	//printf("Currently there is zero functionality. Sorry about that...\n");
 
 	//Keybase keybase;

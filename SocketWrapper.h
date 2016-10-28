@@ -12,6 +12,7 @@ class SocketWrapper
 {
 protected:
 	void setError(std::string e);
+	boost::asio::io_service * io_service;
 	std::string _error;
 	boost::atomic<Relationship> _status;
 	tcp::socket * sock;

@@ -27,6 +27,7 @@ void SocketWrapper::listen_thread_func()
 
 				data_packet *data = new data_packet(buf, CHAR_MAX);
 				this->listen_queue.push(data);
+				this->io_service->run();
 			}
 			else
 				return;
@@ -55,11 +56,11 @@ void SocketWrapper::send_thread_func()
 					boost::system::error_code ignored_error;
 					// (*data_to_send).data, (*data_to_send).len
 					boost::asio::write(*sock, boost::asio::buffer((*data_to_send).get_string_val()), boost::asio::transfer_all(), ignored_error);
-					boost::asio::write(*sock, boost::asio::buffer("hi"), boost::asio::transfer_all(), ignored_error);
 					printf("Wrote\n");
 					printf((*data_to_send).get_string_val().c_str());
 					printf("\n");
 					delete data_to_send;
+					this->io_service->run();
 				}
 			}
 			else
@@ -89,12 +90,12 @@ int SocketWrapper::connect(std::string server_addr, std::string port)
 	{
 		try
 		{
-			boost::asio::io_service io_service;
+			this->io_service = new boost::asio::io_service;
 
-			tcp::resolver resolver(io_service);
+			tcp::resolver resolver(*io_service);
 			tcp::resolver::query query(server_addr, port);
 			tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
-			sock = new tcp::socket(io_service);
+			sock = new tcp::socket(*io_service);
 			boost::asio::connect(*sock, endpoint_iterator);
 			this->_status = slave;
 			this->start_threads();
@@ -122,10 +123,10 @@ int SocketWrapper::wait_for_connection(int port = 6666)
 		try
 		{
 			printf("Listenting for connections...\n");
-			boost::asio::io_service io_service;
-			tcp::acceptor acceptor(io_service, tcp::endpoint(tcp::v4(), port));
+			this->io_service = new boost::asio::io_service;
+			tcp::acceptor acceptor(*io_service, tcp::endpoint(tcp::v4(), port));
 
-			this->sock = new tcp::socket(io_service);
+			this->sock = new tcp::socket(*io_service);
 			acceptor.accept(*sock);
 			printf("Recieved connection from ");
 			printf(sock->remote_endpoint().address().to_string().c_str());
@@ -210,6 +211,7 @@ int SocketWrapper::disconnect()
 	{
 		this->_status = disconnected;
 		this->stop_threads();
+		delete io_service;
 		delete sock;
 		return 0;
 	}
