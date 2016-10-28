@@ -22,7 +22,7 @@ protected:
 	boost::thread * send_thread;
 	void start_threads();
 	void stop_threads();
-	boost::lockfree::queue<data_packet *, boost::lockfree::capacity<100>> listen_queue;
+	//boost::lockfree::queue<data_packet *, boost::lockfree::capacity<100>> listen_queue;
 	boost::lockfree::queue<data_packet *, boost::lockfree::capacity<100>> send_queue;
 public:
 	SocketWrapper();
@@ -32,9 +32,6 @@ public:
 	void send(std::string data);
 	void send(data_packet * data);
 	void send(char * data, size_t len);
-	// Delete any packets coming out of here
-	data_packet * recieve();
-	std::string recieve_str();
 	std::string getError();
 	int disconnect();
 	~SocketWrapper();

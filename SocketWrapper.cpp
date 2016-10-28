@@ -16,7 +16,7 @@ void SocketWrapper::listen_thread_func()
 				char * buf = new char[CHAR_MAX];
 				boost::system::error_code error;
 				size_t len = (*sock).read_some(boost::asio::mutable_buffers_1(buf, CHAR_MAX), error);
-				printf("Got %d\n", len);
+				printf("Remote Host: %.*s\n", len, buf);
 				if (error == boost::asio::error::eof)
 				{
 					this->disconnect();
@@ -24,9 +24,7 @@ void SocketWrapper::listen_thread_func()
 				}
 				else if (error)
 					throw boost::system::system_error(error);
-
-				data_packet *data = new data_packet(buf, CHAR_MAX);
-				this->listen_queue.push(data);
+				
 				this->io_service->run();
 			}
 			else
@@ -54,11 +52,7 @@ void SocketWrapper::send_thread_func()
 					data_packet * data_to_send;
 					this->send_queue.pop(data_to_send);
 					boost::system::error_code ignored_error;
-					// (*data_to_send).data, (*data_to_send).len
 					boost::asio::write(*sock, boost::asio::buffer((*data_to_send).get_string_val()), boost::asio::transfer_all(), ignored_error);
-					printf("Wrote\n");
-					printf((*data_to_send).get_string_val().c_str());
-					printf("\n");
 					delete data_to_send;
 					this->io_service->run();
 				}
@@ -162,27 +156,6 @@ void SocketWrapper::send(char* data, size_t len)
 {
 	data_packet *temp = new data_packet(data, len);
 	this->send_queue.push(temp);
-}
-
-// Delete any packets coming out of here
-data_packet * SocketWrapper::recieve()
-{
-	data_packet *data = nullptr;
-	if (!this->listen_queue.empty())
-	{
-		this->listen_queue.pop(data);
-	}
-	return data;
-}
-
-std::string SocketWrapper::recieve_str()
-{
-	data_packet * data = this->recieve();
-	if (data == nullptr)
-		return "";
-	std::string ret_val = data->get_string_val();
-	delete data;
-	return ret_val;
 }
 
 std::string SocketWrapper::getError()

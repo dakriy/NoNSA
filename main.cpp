@@ -41,7 +41,6 @@ int main()
 		std::cout << sock.getError() << std::endl;
 		std::getline(std::cin, input);
 		sock.send(input);
-		std::cout << sock.recieve_str() << std::endl;
 		if (sock.get_status() == disconnected)
 		{
 			std::cout << "Disconnected" << std::endl;
