@@ -16,7 +16,7 @@ void SocketWrapper::listen_thread_func()
 				char * buf = new char[CHAR_MAX];
 				boost::system::error_code error;
 				size_t len = (*sock).read_some(boost::asio::mutable_buffers_1(buf, CHAR_MAX), error);
-				printf("Got %d", len);
+				printf("Got %d\n", len);
 				if (error == boost::asio::error::eof)
 				{
 					this->disconnect();
@@ -32,7 +32,8 @@ void SocketWrapper::listen_thread_func()
 				return;
 		} catch (std::exception& e)
 		{
-			//printf(e.what());
+			printf(e.what());
+			printf("\n");
 			return;
 		}
 		
@@ -53,10 +54,11 @@ void SocketWrapper::send_thread_func()
 					this->send_queue.pop(data_to_send);
 					boost::system::error_code ignored_error;
 					// (*data_to_send).data, (*data_to_send).len
-					//boost::asio::write(*sock, boost::asio::buffer((*data_to_send).get_string_val()), boost::asio::transfer_all(), ignored_error);
+					boost::asio::write(*sock, boost::asio::buffer((*data_to_send).get_string_val()), boost::asio::transfer_all(), ignored_error);
 					boost::asio::write(*sock, boost::asio::buffer("hi"), boost::asio::transfer_all(), ignored_error);
-					printf("Wrote");
-					//printf((*data_to_send).get_string_val().c_str());
+					printf("Wrote\n");
+					printf((*data_to_send).get_string_val().c_str());
+					printf("\n");
 					delete data_to_send;
 				}
 			}
@@ -64,7 +66,8 @@ void SocketWrapper::send_thread_func()
 				return;
 		} catch (std::exception& e)
 		{
-			//printf(e.what());
+			printf(e.what());
+			printf("\n");
 			return;
 		}
 	}
@@ -95,11 +98,13 @@ int SocketWrapper::connect(std::string server_addr, std::string port)
 			boost::asio::connect(*sock, endpoint_iterator);
 			this->_status = slave;
 			this->start_threads();
-			printf("Successfully connected to");
+			printf("Successfully connected to ");
 			printf(sock->remote_endpoint().address().to_string().c_str());
+			printf("\n");
 		} catch (std::exception& e)
 		{
 			printf("Could not connect to the remote host");
+			printf("\n");
 			this->setError(e.what());
 			return 1;
 		}
@@ -116,7 +121,7 @@ int SocketWrapper::wait_for_connection(int port = 6666)
 	{
 		try
 		{
-			printf("Listenting for connections...");
+			printf("Listenting for connections...\n");
 			boost::asio::io_service io_service;
 			tcp::acceptor acceptor(io_service, tcp::endpoint(tcp::v4(), port));
 
@@ -124,6 +129,7 @@ int SocketWrapper::wait_for_connection(int port = 6666)
 			acceptor.accept(*sock);
 			printf("Recieved connection from ");
 			printf(sock->remote_endpoint().address().to_string().c_str());
+			printf("\n");
 			this->_status = master;
 			this->start_threads();
 			return 0;
