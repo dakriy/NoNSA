@@ -13,7 +13,7 @@ int main()
 	printf("You're on a list.\n");
 	SocketWrapper sock;
 	std::string what_to_do;
-	int port;
+	std::string port;
 	while (what_to_do.empty())
 	{
 		std::cout << "Connect or Recieve? C/R" << std::endl;
@@ -21,7 +21,6 @@ int main()
 	}
 	if (what_to_do == "C")
 	{
-		std::string port;
 		std::string host;
 		std::cout << "host" << std::endl;
 		std::cin >> host;
@@ -32,7 +31,7 @@ int main()
 	{
 		std::cout << "port" << std::endl;
 		std::cin >> port;
-		sock.wait_for_connection(port);
+		sock.wait_for_connection(atoi(port.c_str()));
 	}
 
 	std::string input;
