@@ -2,6 +2,7 @@
 #include "logo.h"
 #include <iostream>
 #include "keybase.h"
+#include <boost/algorithm/string.hpp>
 #include "SocketWrapper.h"
 
 int main()
@@ -12,7 +13,7 @@ int main()
 	printf("You're on a list.\n");
 	SocketWrapper sock;
 	std::string what_to_do;
-
+	int port;
 	while (what_to_do.empty())
 	{
 		std::cout << "Connect or Recieve? C/R" << std::endl;
@@ -29,7 +30,6 @@ int main()
 		sock.connect(host, port);
 	} else if (what_to_do == "R")
 	{
-		int port;
 		std::cout << "port" << std::endl;
 		std::cin >> port;
 		sock.wait_for_connection(port);
@@ -48,8 +48,17 @@ int main()
 		sock.send(input);
 		if (sock.get_status() == disconnected)
 		{
-			std::cout << "Disconnected" << std::endl;
-			input = "exit()";
+			std::cout << "Client disconnected. Do you want to rehost? Y/N" << std::endl;
+			std::getline(std::cin, input);
+			boost::algorithm::to_lower(input);
+			if (input == "y" || input =="yes")
+			{
+				sock.wait_for_connection(port);
+			} else
+			{
+				input = "exit()";
+			}
+			
 		}
 		if (input == "exit()")
 		{
