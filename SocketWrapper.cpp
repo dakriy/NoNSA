@@ -69,6 +69,7 @@ void SocketWrapper::listen_thread_func()
 		{
 			printf("%s",e.what());
 			printf("\n");
+			this->disconnect();
 			return;
 		}
 
@@ -102,6 +103,7 @@ void SocketWrapper::send_thread_func()
 		{
 			printf("%s",e.what());
 			printf("\n");
+			this->disconnect();
 			return;
 		}
 	}
@@ -218,17 +220,16 @@ void SocketWrapper::start_threads()
 void SocketWrapper::stop_threads()
 {
 	this->_status = disconnected;
-	this->listen_thread->join();
-	this->send_thread->join();
-	delete this->listen_thread;
-	delete this->send_thread;
+	this->listen_thread->detach();
+	this->send_thread->detach();
+	//delete this->listen_thread;
+	//delete this->send_thread;
 }
 
 int SocketWrapper::disconnect()
 {
 	if (this->_status != disconnected)
 	{
-		this->_status = disconnected;
 		this->send("exit()");
 		this->stop_threads();
 		delete io_service;

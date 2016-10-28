@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include "logo.h"
 #include <iostream>
-//#include "keybase.h"
+#include <boost/algorithm/string.hpp>
 #include "SocketWrapper.h"
 
 int main()
@@ -9,13 +9,12 @@ int main()
 	Logo logo;
 	printf("Welcome to the NoNSA peer-to-peer chat client!\n");
 	logo.printLogo();
+	printf("You're on a list.\n");
 	SocketWrapper sock;
 	std::string what_to_do;
 	std::string input;
-	std::string enc_input;
 	std::string recipient;
-	//Keybase keybase;
-
+	std::string port;
 	while (what_to_do.empty())
 	{
 		std::cout << "Connect or Recieve? C/R" << std::endl;
@@ -23,7 +22,6 @@ int main()
 	}
 	if (what_to_do == "C")
 	{
-		std::string port;
 		std::string host;
 		std::cout << "Please enter host to connect to:" << std::endl;
 		std::cin >> host;
@@ -35,26 +33,36 @@ int main()
 		sock.connect(host, port);
 	} else if (what_to_do == "R")
 	{
-		int port;
 		std::cout << "Please enter port to listen on:" << std::endl;
 		std::cin >> port;
 		std::cout << "Please enter username of recipient:" << std::endl;
 		std::cin >> recipient;
 		sock.setPartnerName(recipient);
-		sock.wait_for_connection(port);
+		sock.wait_for_connection(atoi(port.c_str()));
 	}
 
 	for (;;)
 	{
-		std::cout << sock.getError() << std::endl;
+		if (sock.getError().empty())
+		{
+			std::cout << sock.getError() << std::endl;
+		}
 		std::getline(std::cin, input);
 
-		//enc_input = keybase.SignEncrypt(input,recipient);
 		sock.send(input);
 		if (sock.get_status() == disconnected)
 		{
-			std::cout << "Disconnected" << std::endl;
-			input = "exit()";
+			std::cout << "Client disconnected. Do you want to rehost? Y/N" << std::endl;
+			std::getline(std::cin, input);
+			boost::algorithm::to_lower(input);
+			if (input == "y" || input =="yes")
+			{
+				sock.wait_for_connection(atoi(port.c_str()));
+			} else
+			{
+				input = "exit()";
+			}
+
 		}
 		if (input == "exit()")
 		{
@@ -70,9 +78,5 @@ int main()
 	std::cout << "Press any key to exit" << std::endl;
 	std::getline(std::cin, input);
 
-	//printf("Currently there is zero functionality. Sorry about that...\n");
-
-	//Keybase keybase;
-	//printf("Keybase Status: %d\n",keybase.getKeybaseStatus());
 	return 0;
 }
