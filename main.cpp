@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include "logo.h"
 #include <iostream>
-#include "keybase.h"
+//#include "keybase.h"
 #include "SocketWrapper.h"
 
 int main()
@@ -11,6 +11,10 @@ int main()
 	logo.printLogo();
 	SocketWrapper sock;
 	std::string what_to_do;
+	std::string input;
+	std::string enc_input;
+	std::string recipient;
+	//Keybase keybase;
 
 	while (what_to_do.empty())
 	{
@@ -21,26 +25,31 @@ int main()
 	{
 		std::string port;
 		std::string host;
-		std::cout << "host" << std::endl;
+		std::cout << "Please enter host to connect to:" << std::endl;
 		std::cin >> host;
-		std::cout << "port" << std::endl;
+		std::cout << "Please enter port number to connect to:" << std::endl;
 		std::cin >> port;
+		std::cout << "Please enter username of recipient:" << std::endl;
+		std::cin >> recipient;
+		sock.setPartnerName(recipient);
 		sock.connect(host, port);
 	} else if (what_to_do == "R")
 	{
 		int port;
-		std::cout << "port" << std::endl;
+		std::cout << "Please enter port to listen on:" << std::endl;
 		std::cin >> port;
+		std::cout << "Please enter username of recipient:" << std::endl;
+		std::cin >> recipient;
+		sock.setPartnerName(recipient);
 		sock.wait_for_connection(port);
 	}
-
-	std::string input;
 
 	for (;;)
 	{
 		std::cout << sock.getError() << std::endl;
 		std::getline(std::cin, input);
-		
+
+		//enc_input = keybase.SignEncrypt(input,recipient);
 		sock.send(input);
 		if (sock.get_status() == disconnected)
 		{

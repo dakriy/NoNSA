@@ -14,13 +14,12 @@ class Keybase
 {
 	std::string binPath;
 	bool debug_enabled;
+	std::string callKeybase(std::string args);
 public:
 	Keybase();
 	int getKeybaseStatus();
 	void disableDebug();
 	void enableDebug();
-	std::string W2String(std::wstring ws);
-	std::string callKeybase(std::string args);
 	std::string SignEncrypt(std::string message,std::string recipient);
 	std::string DecryptVerify(std::string message, std::string sender);
 };

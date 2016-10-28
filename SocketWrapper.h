@@ -5,6 +5,7 @@
 #include <boost/lockfree/queue.hpp>
 #include <boost/atomic.hpp>
 #include "Message.h"
+#include "keybase.h"
 
 enum Relationship
 {
@@ -29,8 +30,11 @@ protected:
 	void stop_threads();
 	//boost::lockfree::queue<data_packet *, boost::lockfree::capacity<100>> listen_queue;
 	boost::lockfree::queue<Message, boost::lockfree::capacity<100>> send_queue;
+	Keybase *keybase;
+	std::string partner;
 public:
 	SocketWrapper();
+	void setPartnerName(std::string partner);
 	Relationship get_status();
 	int connect(std::string server_addr, std::string port);
 	int wait_for_connection(int port);

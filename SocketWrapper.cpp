@@ -26,10 +26,15 @@ void SocketWrapper::listen_thread_func()
 					throw boost::system::system_error(error);
 
 				char c_len[5] = { '\0' };
+#ifdef __linux__
+				strncpy(c_len, buf, Message::header_length);
+#else
 				strncpy_s(c_len, buf, Message::header_length);
+#endif
 				size_t body_len = atoi(c_len);
 
-				char data[1024];
+				//char data[1024];
+				char data[4096];
 
 				read(*sock, boost::asio::buffer(data, body_len), error);
 				if (error == boost::asio::error::eof)
@@ -39,29 +44,34 @@ void SocketWrapper::listen_thread_func()
 				}
 				else if (error)
 					throw boost::system::system_error(error);
-				
+
 				if(body_len == 6)
 				{
 					char buff[7];
 					char compare[7] = { 'e','x','i','t','(',')','\0' };
+#ifdef __linux__
+					strncpy(buff, data, 6);
+#else
 					strncpy_s(buff, data, 6);
+#endif
 					if (strcmp(buff, compare) == 0)
 					{
 						return;
 					}
 				}
-
-				printf("Remote Host: %.*s\n", body_len, data);
+				std::string data_str = std::string(data, body_len);
+				std::string decrypted = keybase->DecryptVerify(data_str,partner);
+				//printf("Remote Host: %.*s\n", body_len, data);
 			}
 			else
 				return;
 		} catch (std::exception& e)
 		{
-			printf(e.what());
+			printf("%s",e.what());
 			printf("\n");
 			return;
 		}
-		
+
 	}
 }
 
@@ -78,8 +88,10 @@ void SocketWrapper::send_thread_func()
 					Message data_to_send;
 					this->send_queue.pop(data_to_send);
 					boost::system::error_code ignored_error;
-					char temp[1028];
+					//char temp[1028];
+					char temp[4096];
 					memcpy(temp, data_to_send.get_data(), data_to_send.length());
+					//printf("Data Length: %d\n", data_to_send.length());
 					boost::asio::write(*sock, boost::asio::buffer(temp, data_to_send.length()), boost::asio::transfer_all(), ignored_error);
 					this->io_service->run();
 				}
@@ -88,7 +100,7 @@ void SocketWrapper::send_thread_func()
 				return;
 		} catch (std::exception& e)
 		{
-			printf(e.what());
+			printf("%s",e.what());
 			printf("\n");
 			return;
 		}
@@ -98,6 +110,7 @@ void SocketWrapper::send_thread_func()
 SocketWrapper::SocketWrapper()
 {
 	this->_status = disconnected;
+	keybase = new Keybase();
 }
 
 Relationship SocketWrapper::get_status()
@@ -121,7 +134,7 @@ int SocketWrapper::connect(std::string server_addr, std::string port)
 			this->_status = slave;
 			this->start_threads();
 			printf("Successfully connected to ");
-			printf(sock->remote_endpoint().address().to_string().c_str());
+			printf("%s",sock->remote_endpoint().address().to_string().c_str());
 			printf("\n");
 		} catch (std::exception& e)
 		{
@@ -150,7 +163,7 @@ int SocketWrapper::wait_for_connection(int port = 6666)
 			this->sock = new tcp::socket(*io_service);
 			acceptor.accept(*sock);
 			printf("Recieved connection from ");
-			printf(sock->remote_endpoint().address().to_string().c_str());
+			printf("%s",sock->remote_endpoint().address().to_string().c_str());
 			printf("\n");
 			this->_status = master;
 			this->start_threads();
@@ -173,7 +186,9 @@ void SocketWrapper::send(std::string data)
 	if (data.empty())
 		return;
 	Message tmp;
-	tmp.set_body(data);
+	std::string encrypted = keybase->SignEncrypt(data,partner);
+	// tmp.set_body(data);
+	tmp.set_body(encrypted);
 	this->send_queue.push(tmp);
 }
 
@@ -230,4 +245,9 @@ SocketWrapper::~SocketWrapper()
 	{
 		this->disconnect();
 	}
+}
+
+void SocketWrapper::setPartnerName(std::string p_name)
+{
+	partner = p_name;
 }

@@ -9,7 +9,7 @@ class Message
 {
 public:
 	enum { header_length = 4 };
-	enum { max_body_length = 1024 };
+	enum { max_body_length = 4096 };
 	Message() : body_length(0)
 	{
 		

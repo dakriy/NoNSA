@@ -4,7 +4,11 @@ void Message::set_header()
 {
 	using namespace std; // For sprintf and memcpy.
 	char header[header_length + 1] = "";
-	sprintf_s(header, "%4d", body_length);
+#ifdef __linux__
+	sprintf(header, "%4ld", body_length);
+#else
+	sprinf_s(header, "%4ld", body_length);
+#endif
 	memcpy(data, header, header_length);
 	return;
 }
