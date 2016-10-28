@@ -16,14 +16,22 @@ void SocketWrapper::listen_thread_func()
 				char buf[CHAR_MAX];
 				boost::system::error_code error;
 				size_t len = 0;
-				read(*sock, boost::asio::buffer(buf, Message::header_length));
+				read(*sock, boost::asio::buffer(buf, Message::header_length), error);
+				if (error == boost::asio::error::eof)
+				{
+					this->disconnect();
+					return; // Connection closed cleanly by peer
+				}
+				else if (error)
+					throw boost::system::system_error(error);
+
 				char c_len[5] = { '\0' };
 				strncpy_s(c_len, buf, Message::header_length);
 				size_t body_len = atoi(c_len);
 
 				char data[1024];
 
-				read(*sock, boost::asio::buffer(data, body_len));
+				read(*sock, boost::asio::buffer(data, body_len), error);
 				if (error == boost::asio::error::eof)
 				{
 					this->disconnect();
@@ -194,7 +202,6 @@ void SocketWrapper::start_threads()
 
 void SocketWrapper::stop_threads()
 {
-	this->send("exit()");
 	this->_status = disconnected;
 	this->listen_thread->join();
 	this->send_thread->join();
@@ -207,6 +214,7 @@ int SocketWrapper::disconnect()
 	if (this->_status != disconnected)
 	{
 		this->_status = disconnected;
+		this->send("exit()");
 		this->stop_threads();
 		delete io_service;
 		delete sock;
