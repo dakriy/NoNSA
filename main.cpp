@@ -19,18 +19,18 @@ int main()
 	}
 	if (what_to_do == "C")
 	{
-		std::string port;
-		std::string host;
+		std::string port = "6666";
+		std::string host = "127.0.0.1";
 		std::cout << "host" << std::endl;
-		std::cin >> host;
+		//std::cin >> host;
 		std::cout << "port" << std::endl;
-		std::cin >> port;
+		//std::cin >> port;
 		sock.connect(host, port);
 	} else if (what_to_do == "R")
 	{
-		int port;
+		int port = 6666;
 		std::cout << "port" << std::endl;
-		std::cin >> port;
+		//std::cin >> port;
 		sock.wait_for_connection(port);
 	}
 
@@ -39,9 +39,14 @@ int main()
 	while (input != "exit()")
 	{
 		std::cout << sock.getError() << std::endl;
-		std::cin >> input;
+		std::getline(std::cin, input);
 		sock.send(input);
 		std::cout << sock.recieve_str() << std::endl;
+		if (sock.get_status() == disconnected)
+		{
+			std::cout << "Disconnected" << std::endl;
+			input = "exit()";
+		}
 	}
 	
 	
