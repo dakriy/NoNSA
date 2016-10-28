@@ -203,8 +203,8 @@ void SocketWrapper::start_threads()
 void SocketWrapper::stop_threads()
 {
 	this->_status = disconnected;
-	this->listen_thread->join();
-	this->send_thread->join();
+	this->listen_thread->detach();
+	this->send_thread->detach();
 	delete this->listen_thread;
 	delete this->send_thread;
 }
@@ -213,7 +213,6 @@ int SocketWrapper::disconnect()
 {
 	if (this->_status != disconnected)
 	{
-		this->_status = disconnected;
 		this->send("exit()");
 		this->stop_threads();
 		delete io_service;

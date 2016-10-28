@@ -9,6 +9,7 @@ int main()
 	Logo logo;
 	printf("Welcome to the NoNSA peer-to-peer chat client!\n");
 	logo.printLogo();
+	printf("You're on a list.\n");
 	SocketWrapper sock;
 	std::string what_to_do;
 
@@ -38,7 +39,10 @@ int main()
 
 	for (;;)
 	{
-		std::cout << sock.getError() << std::endl;
+		if (sock.getError().empty())
+		{
+			std::cout << sock.getError() << std::endl;
+		}
 		std::getline(std::cin, input);
 		
 		sock.send(input);
