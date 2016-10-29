@@ -7,7 +7,7 @@ void Message::set_header()
 #ifdef __linux__
 	sprintf(header, "%4ld", body_length);
 #else
-	sprinf_s(header, "%4ld", body_length);
+	sprintf_s(header, "%4ld", body_length);
 #endif
 	memcpy(data, header, header_length);
 	return;
