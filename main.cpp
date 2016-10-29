@@ -9,7 +9,7 @@ int main()
 	Logo logo;
 	printf("Welcome to the NoNSA peer-to-peer chat client!\n");
 	logo.printLogo();
-	printf("You're on a list.\n");
+	printf("You're here because you're on a list.\n");
 	SocketWrapper sock;
 	std::string what_to_do;
 	std::string input;
