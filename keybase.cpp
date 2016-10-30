@@ -6,7 +6,14 @@
 
 Keybase::Keybase()
 {
+#ifdef __linux__
 	binPath="/usr/bin/keybase";
+#else
+	binPath="";
+	//You'll probably need to use the SHGetKnownFolderPath() function,
+	//but I'd just be blinldy guessing. Keybase gets installed into
+	//C:\\Users\\<User>\\AppData\\Roaming\\Keybase\\keybase.exe
+#endif
 	debug_enabled=0;
 	return;
 }
@@ -58,7 +65,11 @@ std::string Keybase::callKeybase(std::string args)
 	const char *cmd = full_cmd.c_str();
 	JSONValue *ret;
 
+#ifdef __linux__
 	FILE* pipe = popen(cmd, "r");
+#else
+	FILE* pipe = _popen(cmd, "r");
+#endif
 	if(!pipe) throw std::runtime_error("popen() failed!");
 	try{
 		while(fgets(buffer, sizeof(buffer), pipe) != NULL)
@@ -66,10 +77,18 @@ std::string Keybase::callKeybase(std::string args)
 			result += buffer;
 		}
 	} catch (...) {
+#ifdef __linux__
 		pclose(pipe);
+#else
+		_pclose(pipe);
+#endif
 		throw;
 	}
-	pclose(pipe);
+#ifdef __linux__
+		pclose(pipe);
+#else
+		_pclose(pipe);
+#endif
 
 	return result;
 }
@@ -87,7 +106,11 @@ void Keybase::enableDebug()
 std::string Keybase::SignEncrypt(std::string message,std::string recipient)
 {
 	int fd;
-	char tempfilename[]="/tmp/fileXXXXXX";
+#ifdef __linux__
+		char tempfilename[]="/tmp/fileXXXXXX";
+#else
+		char tempfilename[]="C:\\Windows\\Temp\\fileXXXXXX";
+#endif
 	fd = mkstemp(tempfilename);
 	write(fd,message.c_str(),strlen(message.c_str()));
 	std::string args = std::string("sign -i ")+tempfilename;
@@ -105,7 +128,11 @@ std::string Keybase::SignEncrypt(std::string message,std::string recipient)
 std::string Keybase::DecryptVerify(std::string enc_message, std::string sender)
 {
 	int fd;
+#ifdef __linux__
 	char tempfilename[]="/tmp/fileXXXXXX";
+#else
+	char tempfilename[]="C:\\Windows\\Temp\\fileXXXXXX";
+#endif
 	fd = mkstemp(tempfilename);
 	std::string args = std::string("decrypt -o ")+tempfilename+" -m \""+enc_message+"\"";
 	callKeybase(args);
