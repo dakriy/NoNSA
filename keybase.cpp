@@ -2,11 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
-#ifdef __linux__
-	#include <unistd.h>
-#else
-	#include <io.h>
-#endif
+#include <unistd.h>
+
 Keybase::Keybase()
 {
 #ifdef __linux__
