@@ -2,8 +2,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
-#include <unistd.h>
-
+#ifdef __linux__
+	#include <unistd.h>
+#else
+	#include <io.h>
+#endif
 Keybase::Keybase()
 {
 #ifdef __linux__
@@ -111,18 +114,18 @@ std::string Keybase::SignEncrypt(std::string message,std::string recipient)
 #else
 		char tempfilename[]="C:\\Windows\\Temp\\fileXXXXXX";
 #endif
-	fd = mkstemp(tempfilename);
-	write(fd,message.c_str(),strlen(message.c_str()));
+	fd = _mktemp_s(tempfilename);
+	_write(fd,message.c_str(),strlen(message.c_str()));
 	std::string args = std::string("sign -i ")+tempfilename;
 	std::string signed_message = callKeybase(args);
-	lseek(fd,0,SEEK_SET);
-	write(fd,signed_message.c_str(),strlen(signed_message.c_str()));
+	_lseek(fd,0,SEEK_SET);
+	_write(fd,signed_message.c_str(),strlen(signed_message.c_str()));
 	args = std::string("encrypt -i ")+tempfilename+" "+recipient;
 	std::string enc_message = callKeybase(args);
 	std::string zeros = std::string(signed_message.length(),'0');
-	write(fd,zeros.c_str(),strlen(zeros.c_str()));
-	close(fd);
-	unlink(tempfilename);
+	_write(fd,zeros.c_str(),strlen(zeros.c_str()));
+	_close(fd);
+	_unlink(tempfilename);
 	return enc_message;
 }
 std::string Keybase::DecryptVerify(std::string enc_message, std::string sender)
@@ -133,15 +136,15 @@ std::string Keybase::DecryptVerify(std::string enc_message, std::string sender)
 #else
 	char tempfilename[]="C:\\Windows\\Temp\\fileXXXXXX";
 #endif
-	fd = mkstemp(tempfilename);
+	fd = _mktemp_s(tempfilename);
 	std::string args = std::string("decrypt -o ")+tempfilename+" -m \""+enc_message+"\"";
 	callKeybase(args);
 	args = std::string("verify -i ")+tempfilename;
 	std::string message = callKeybase(args);
 	printf("%s\n",message.c_str());
-	lseek(fd,0,SEEK_SET);
+	_lseek(fd,0,SEEK_SET);
 	std::string zeros = std::string(enc_message.length(),'0');
-	close(fd);
-	unlink(tempfilename);
+	_close(fd);
+	_unlink(tempfilename);
 	return message;
 }
